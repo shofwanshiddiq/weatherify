@@ -37,6 +37,14 @@ const App: React.FC = () => {
     return () => { if (rotateTimer.current) clearInterval(rotateTimer.current); };
   }, []);
 
+  useEffect(() => {
+    document.body.classList.add('dark')
+
+    return () => {
+      document.body.classList.remove('dark')
+    }
+  }, [])
+
   const detailWeather = detailCity ? [...majorCities, ...indonesiaCities].find(c => c.id === detailCity) : null;
 
   const filteredCities = majorCities.filter(

@@ -4,6 +4,7 @@
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+
 /* ── DARK THEME (default) ── */
 .dark {
   --bg: #070d1a;
@@ -46,6 +47,7 @@
   --sidebar-bg: rgba(255,255,255,0.97);
   --card-bg: rgba(255,255,255,0.80);
   --input-bg: rgba(0,0,0,0.04);
+  background: white;
 }
 
 :root {
@@ -64,6 +66,7 @@ body {
   overflow-x: hidden;
   transition: background 0.3s, color 0.3s;
 }
+
 
 /* ── APP LAYOUT ── */
 .app { display: flex; min-height: 100vh; }
