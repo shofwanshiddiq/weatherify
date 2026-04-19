@@ -12,12 +12,13 @@ interface Props {
   cities: CityWeather[];
   unit: TempUnit;
   onSelectCity: (id: string) => void;
+  selectedId?: string;
 }
 
 const geoUrl =
   "https://raw.githubusercontent.com/superpikar/indonesia-geojson/master/indonesia-province-simple.json";
 
-const IndonesiaMap: React.FC<Props> = ({ cities, unit, onSelectCity }) => {
+const IndonesiaMap: React.FC<Props> = ({ cities, unit, onSelectCity, selectedId }) => {
   const [hovered, setHovered] = useState<string | null>(null);
 
   return (
@@ -48,6 +49,7 @@ const IndonesiaMap: React.FC<Props> = ({ cities, unit, onSelectCity }) => {
         {/* 📍 PINS */}
         {cities.map((city) => {
           const isHovered = hovered === city.id;
+          const isSelected = selectedId === city.id;
           const tempColor = getTempColor(city.temp);
 
           return (
@@ -58,21 +60,32 @@ const IndonesiaMap: React.FC<Props> = ({ cities, unit, onSelectCity }) => {
                 onMouseEnter={() => setHovered(city.id)}
                 onMouseLeave={() => setHovered(null)}
               >
-                {isHovered && (
+                {/* Pulse ring for selected city */}
+                {isSelected && (
                   <circle r={18} fill="none" stroke={tempColor} strokeWidth={1.5} opacity={0.4}>
                     <animate attributeName="r" from="10" to="22" dur="1.2s" repeatCount="indefinite" />
                     <animate attributeName="opacity" from="0.6" to="0" dur="1.2s" repeatCount="indefinite" />
                   </circle>
                 )}
 
+                {/* Hover pulse */}
+                {isHovered && !isSelected && (
+                  <circle r={18} fill="none" stroke={tempColor} strokeWidth={1.5} opacity={0.4}>
+                    <animate attributeName="r" from="10" to="22" dur="1.2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="0.6" to="0" dur="1.2s" repeatCount="indefinite" />
+                  </circle>
+                )}
+
+                {/* Pin circle */}
                 <circle
-                  r={isHovered ? 8 : 5}
-                  fill={isHovered ? tempColor : "rgba(255,255,255,0.3)"}
+                  r={isSelected || isHovered ? 8 : 5}
+                  fill={isSelected || isHovered ? tempColor : "rgba(255,255,255,0.3)"}
                   stroke={tempColor}
                   strokeWidth={1.5}
                 />
 
-                <circle r={isHovered ? 3 : 2} fill={isHovered ? "#fff" : tempColor} />
+                {/* Inner dot */}
+                <circle r={isSelected || isHovered ? 3 : 2} fill={isSelected || isHovered ? "#fff" : tempColor} />
 
                 {isHovered && (
                   <g>

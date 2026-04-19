@@ -1,41 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import WorldMap from './components/WorldMap';
 import CurrentWeather from './components/CurrentWeather';
-import CityCard from './components/CityCard';
 import CityDetail from './components/CityDetail';
 import WeatherAlerts from './components/WeatherAlerts';
-import IndonesiaSection from './components/IndonesiaSection';
+import IndonesiaMap from './components/IndonesiaMap';
 import { majorCities, worldMapCities, currentLocation, indonesiaCities } from './data/weatherData';
 import type { TempUnit } from './types/weather';
 import './styles.css';
 
-const ROTATE_INTERVAL = 4000;
+const GLOBAL_OVERVIEW_ROTATE = 3000;
 
 const App: React.FC = () => {
-  const [selectedCityId, setSelectedCityId] = useState<string>('jakarta');
+  const [selectedCityId, setSelectedCityId] = useState<string>('new-york');
+  const [selectedIndonesiaCityId, setSelectedIndonesiaCityId] = useState<string>('jakarta');
   const [detailCity, setDetailCity] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'map' | 'cities' | 'alerts'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'map' | 'indonesia' | 'alerts'>('dashboard');
   const [unit, setUnit] = useState<TempUnit>('C');
   const [darkMode, setDarkMode] = useState(true);
-  // Rotating major cities on dashboard
-  const [rotatingIdx, setRotatingIdx] = useState(0);
-  const [rotatingAnim, setRotatingAnim] = useState(false);
-  // Selected city for Cities hero card
-  const [heroCity, setHeroCity] = useState(majorCities[0].id);
-  const rotateTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Global overview city rotation
+  const [globalOverviewIdx, setGlobalOverviewIdx] = useState(0);
+  // Indonesia overview city rotation
+  const [indonesiaOverviewIdx, setIndonesiaOverviewIdx] = useState(0);
+  const globalOverviewTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const indonesiaOverviewTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-rotate dashboard city cards
+  // Auto-rotate global overview city
   useEffect(() => {
-    rotateTimer.current = setInterval(() => {
-      setRotatingAnim(true);
-      setTimeout(() => {
-        setRotatingIdx(i => (i + 4) % majorCities.length);
-        setRotatingAnim(false);
-      }, 400);
-    }, ROTATE_INTERVAL);
-    return () => { if (rotateTimer.current) clearInterval(rotateTimer.current); };
-  }, []);
+    globalOverviewTimer.current = setInterval(() => {
+      setGlobalOverviewIdx(i => (i + 1) % worldMapCities.length);
+      setSelectedCityId(worldMapCities[(globalOverviewIdx + 1) % worldMapCities.length].id);
+    }, GLOBAL_OVERVIEW_ROTATE);
+    return () => { if (globalOverviewTimer.current) clearInterval(globalOverviewTimer.current); };
+  }, [globalOverviewIdx]);
+
+  // Auto-rotate indonesia overview city
+  useEffect(() => {
+    indonesiaOverviewTimer.current = setInterval(() => {
+      setIndonesiaOverviewIdx(i => (i + 1) % indonesiaCities.length);
+      setSelectedIndonesiaCityId(indonesiaCities[(indonesiaOverviewIdx + 1) % indonesiaCities.length].id);
+    }, GLOBAL_OVERVIEW_ROTATE);
+    return () => { if (indonesiaOverviewTimer.current) clearInterval(indonesiaOverviewTimer.current); };
+  }, [indonesiaOverviewIdx]);
 
   useEffect(() => {
     document.body.classList.add('dark')
@@ -47,22 +53,11 @@ const App: React.FC = () => {
 
   const detailWeather = detailCity ? [...majorCities, ...indonesiaCities].find(c => c.id === detailCity) : null;
 
-  const filteredCities = majorCities.filter(
-    c => c.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         c.country.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const handleMapCitySelect = (id: string) => {
     setSelectedCityId(id);
     const found = majorCities.find(c => c.id === id);
     if (found) setDetailCity(id);
   };
-
-  const visibleDashCities = majorCities.slice(rotatingIdx, rotatingIdx + 4).length === 4
-    ? majorCities.slice(rotatingIdx, rotatingIdx + 4)
-    : [...majorCities.slice(rotatingIdx), ...majorCities.slice(0, 4 - (majorCities.length - rotatingIdx))];
-
-  const heroCityData = majorCities.find(c => c.id === heroCity) ?? majorCities[0];
 
   return (
     <div className={`app ${darkMode ? 'dark' : 'light'}`}>
@@ -77,7 +72,7 @@ const App: React.FC = () => {
           {([
             { id: 'dashboard', icon: '⊞', label: 'Dashboard' },
             { id: 'map', icon: '🗺', label: 'World Map' },
-            { id: 'cities', icon: '🏙', label: 'Cities' },
+            { id: 'indonesia', icon: '🇮🇩', label: 'Indonesia' },
             { id: 'alerts', icon: '🚨', label: 'Alerts' },
           ] as const).map(item => (
             <button key={item.id}
@@ -111,7 +106,7 @@ const App: React.FC = () => {
             <h1 className="page-title">
               {activeSection === 'dashboard' && 'Dashboard'}
               {activeSection === 'map' && 'World Map'}
-              {activeSection === 'cities' && 'Global Cities'}
+              {activeSection === 'indonesia' && 'Indonesia'}
               {activeSection === 'alerts' && 'Weather Alerts'}
             </h1>
             <div className="topbar-sub">
@@ -124,7 +119,7 @@ const App: React.FC = () => {
               <input className="search-input" placeholder="Search cities..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                onFocus={() => setActiveSection('cities')} />
+                onFocus={() => setActiveSection('indonesia')} />
               {searchQuery && <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>}
             </div>
             <div className="topbar-avatar">CD</div>
@@ -143,6 +138,95 @@ const App: React.FC = () => {
                   <h2 className="section-title">Global Overview</h2>
                   <button className="see-all" onClick={() => setActiveSection('map')}>View Map →</button>
                 </div>
+                
+                {/* Auto-rotating city card */}
+                {worldMapCities[globalOverviewIdx] && (() => {
+                  const worldCity = worldMapCities[globalOverviewIdx];
+                  const detailedCity = [...majorCities, ...indonesiaCities].find(c => c.id === worldCity.id);
+                  return (
+                    <div className="global-overview-card">
+                      <div className="goc-content">
+                        <div className="goc-left">
+                          <div className="goc-emoji" style={{ fontSize: '2.5rem' }}>
+                            {worldCity.condition === 'sunny' ? '☀️' : 
+                             worldCity.condition === 'rainy' ? '🌧️' : 
+                             worldCity.condition === 'snowy' ? '❄️' : 
+                             worldCity.condition === 'stormy' ? '⛈️' : 
+                             worldCity.condition === 'cloudy' ? '☁️' : 
+                             worldCity.condition === 'partly-cloudy' ? '⛅' : 
+                             worldCity.condition === 'windy' ? '💨' : '🌦️'}
+                          </div>
+                          <div className="goc-info">
+                            <div className="goc-city">{worldCity.city}</div>
+                            <div className="goc-country">{worldCity.country}</div>
+                          </div>
+                        </div>
+                        <div className="goc-right">
+                          <div className="goc-temp" style={{ color: worldCity.temp > 30 ? '#f97316' : worldCity.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                            {unit === 'F' ? Math.round(worldCity.temp * 9/5 + 32) : worldCity.temp}°{unit}
+                          </div>
+                          <div className="goc-condition">{worldCity.condition}</div>
+                        </div>
+                      </div>
+
+                      {/* Additional stats grid */}
+                      {detailedCity && (
+                        <div className="goc-stats-grid">
+                          <div className="goc-stat">
+                            <span className="goc-stat-icon">💧</span>
+                            <div className="goc-stat-content">
+                              <div className="goc-stat-value">{detailedCity.humidity}%</div>
+                              <div className="goc-stat-label">Humidity</div>
+                            </div>
+                          </div>
+                          <div className="goc-stat">
+                            <span className="goc-stat-icon">🌬️</span>
+                            <div className="goc-stat-content">
+                              <div className="goc-stat-value">{detailedCity.windSpeed} km/h</div>
+                              <div className="goc-stat-label">Wind</div>
+                            </div>
+                          </div>
+                          <div className="goc-stat">
+                            <span className="goc-stat-icon">🌡️</span>
+                            <div className="goc-stat-content">
+                              <div className="goc-stat-value">{detailedCity.pressure} hPa</div>
+                              <div className="goc-stat-label">Pressure</div>
+                            </div>
+                          </div>
+                          <div className="goc-stat">
+                            <span className="goc-stat-icon">☀️</span>
+                            <div className="goc-stat-content">
+                              <div className="goc-stat-value">{detailedCity.uvIndex}</div>
+                              <div className="goc-stat-label">UV Index</div>
+                            </div>
+                          </div>
+                          <div className="goc-stat">
+                            <span className="goc-stat-icon">🌧️</span>
+                            <div className="goc-stat-content">
+                              <div className="goc-stat-value">{detailedCity.daily[0]?.precipitation ?? 0}%</div>
+                              <div className="goc-stat-label">Precip.</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="goc-dots">
+                        {worldMapCities.map((_, i) => (
+                          <span 
+                            key={i} 
+                            className={`goc-dot ${i === globalOverviewIdx ? 'active' : ''}`}
+                            onClick={() => {
+                              setGlobalOverviewIdx(i);
+                              setSelectedCityId(worldMapCities[i].id);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+
                 <div className="map-container">
                   <WorldMap cities={worldMapCities} onSelectCity={handleMapCitySelect} selectedId={selectedCityId} unit={unit} />
                 </div>
@@ -150,47 +234,124 @@ const App: React.FC = () => {
 
               <section className="section">
                 <div className="section-header">
-                  <h2 className="section-title">Major Cities</h2>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span className="rotate-dots">
-                      {Array.from({ length: Math.ceil(majorCities.length / 4) }).map((_, i) => (
-                        <span key={i} className={`rotate-dot ${i === Math.floor(rotatingIdx / 4) ? 'active' : ''}`} />
-                      ))}
-                    </span>
-                    <button className="see-all" onClick={() => setActiveSection('cities')}>See all →</button>
-                  </div>
+                  <h2 className="section-title">🇮🇩 Indonesia Overview</h2>
+                  <button className="see-all" onClick={() => setActiveSection('indonesia')}>View Map →</button>
                 </div>
-                <div className={`mini-cities ${rotatingAnim ? 'fade-out' : 'fade-in'}`}>
-                  {visibleDashCities.map(c => (
-                    <div key={c.id} className="mini-city-card" onClick={() => setDetailCity(c.id)}>
-                      <div className="mc-top">
-                        <span style={{ fontSize: '1.5rem' }}>
-                          {c.condition === 'sunny' ? '☀️' : c.condition === 'rainy' ? '🌧️' : c.condition === 'snowy' ? '❄️' : c.condition === 'stormy' ? '⛈️' : c.condition === 'thunderstorm' ? '🌩️' : c.condition === 'drizzle' ? '🌦️' : c.condition === 'partly-cloudy' ? '⛅' : '☁️'}
-                        </span>
-                        <div className="mc-temp">{c.temp}{unit === 'F' ? Math.round(c.temp * 9/5 + 32) : c.temp}°</div>
+                
+                {/* Auto-rotating Indonesia city card */}
+                {indonesiaCities[indonesiaOverviewIdx] && (() => {
+                  const idCity = indonesiaCities[indonesiaOverviewIdx];
+                  return (
+                    <div className="global-overview-card">
+                      <div className="goc-content">
+                        <div className="goc-left">
+                          <div className="goc-emoji" style={{ fontSize: '2.5rem' }}>
+                            {idCity.condition === 'sunny' ? '☀️' : 
+                             idCity.condition === 'rainy' ? '🌧️' : 
+                             idCity.condition === 'snowy' ? '❄️' : 
+                             idCity.condition === 'stormy' ? '⛈️' : 
+                             idCity.condition === 'cloudy' ? '☁️' : 
+                             idCity.condition === 'partly-cloudy' ? '⛅' : 
+                             idCity.condition === 'thunderstorm' ? '🌩️' : '🌦️'}
+                          </div>
+                          <div className="goc-info">
+                            <div className="goc-city">{idCity.city}</div>
+                            <div className="goc-country">{idCity.country}</div>
+                          </div>
+                        </div>
+                        <div className="goc-right">
+                          <div className="goc-temp" style={{ color: idCity.temp > 30 ? '#f97316' : idCity.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                            {unit === 'F' ? Math.round(idCity.temp * 9/5 + 32) : idCity.temp}°{unit}
+                          </div>
+                          <div className="goc-condition">{idCity.condition}</div>
+                        </div>
                       </div>
-                      <div className="mc-city">{c.city}</div>
-                      <div className="mc-country">{c.country}</div>
+
+                      {/* Additional stats grid */}
+                      <div className="goc-stats-grid">
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">💧</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{idCity.humidity}%</div>
+                            <div className="goc-stat-label">Humidity</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌬️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{idCity.windSpeed} km/h</div>
+                            <div className="goc-stat-label">Wind</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌡️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{idCity.pressure} hPa</div>
+                            <div className="goc-stat-label">Pressure</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">☀️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{idCity.uvIndex}</div>
+                            <div className="goc-stat-label">UV Index</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌧️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{idCity.daily[0]?.precipitation ?? 0}%</div>
+                            <div className="goc-stat-label">Precip.</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="goc-dots">
+                        {indonesiaCities.map((_, i) => (
+                          <span 
+                            key={i} 
+                            className={`goc-dot ${i === indonesiaOverviewIdx ? 'active' : ''}`}
+                            onClick={() => {
+                              setIndonesiaOverviewIdx(i);
+                              setSelectedIndonesiaCityId(indonesiaCities[i].id);
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  );
+                })()}
+
+                {/* Indonesia Map with Legend */}
+                <div className="map-full-section" style={{ marginTop: '20px' }}>
+                  <div className="map-full-container">
+                    <IndonesiaMap cities={indonesiaCities} unit={unit} onSelectCity={setSelectedIndonesiaCityId} selectedId={selectedIndonesiaCityId} />
+                  </div>
+                  <div className="map-legend">
+                    <div className="legend-title">Temperature Scale</div>
+                    <div className="legend-gradient" />
+                    <div className="legend-labels">
+                      <span style={{ color: '#60a5fa' }}>≤0°</span>
+                      <span style={{ color: '#86efac' }}>18°</span>
+                      <span style={{ color: '#ef4444' }}>35°+</span>
+                    </div>
+                    <div className="legend-cities">
+                      <div className="legend-cities-title">Indonesian Cities ({indonesiaCities.length})</div>
+                      {indonesiaCities.map(c => (
+                        <div key={c.id} className={`legend-city-row ${c.id === selectedIndonesiaCityId ? 'selected' : ''}`}
+                          onClick={() => setSelectedIndonesiaCityId(c.id)}>
+                          <span>{c.city}</span>
+                          <span style={{ color: c.temp > 30 ? '#f97316' : c.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                            {unit === 'F' ? Math.round(c.temp * 9/5 + 32) : c.temp}°{unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </section>
 
-              {/* Indonesia mini preview */}
-              <section className="section">
-                <div className="section-header">
-                  <h2 className="section-title">🇮🇩 Indonesia Spotlight</h2>
-                </div>
-                <div className="id-preview-pills">
-                  {indonesiaCities.slice(0, 5).map(c => (
-                    <div key={c.id} className="id-preview-pill" onClick={() => { setDetailCity(c.id); }}>
-                      <span>{c.condition === 'sunny' ? '☀️' : c.condition === 'rainy' ? '🌧️' : c.condition === 'partly-cloudy' ? '⛅' : c.condition === 'cloudy' ? '☁️' : '🌩️'}</span>
-                      <span className="idp-city">{c.city}</span>
-                      <span className="idp-temp">{unit === 'F' ? Math.round(c.temp * 9/5 + 32) : c.temp}°{unit}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+
             </div>
           </div>
         )}
@@ -198,6 +359,94 @@ const App: React.FC = () => {
         {/* ── WORLD MAP ── */}
         {activeSection === 'map' && (
           <div className="map-full-section">
+            {/* Global Overview carousel on top */}
+            <div style={{ padding: '0 20px' }}>
+              {worldMapCities[globalOverviewIdx] && (() => {
+                const worldCity = worldMapCities[globalOverviewIdx];
+                const detailedCity = [...majorCities, ...indonesiaCities].find(c => c.id === worldCity.id);
+                return (
+                  <div className="global-overview-card">
+                    <div className="goc-content">
+                      <div className="goc-left">
+                        <div className="goc-emoji" style={{ fontSize: '2.5rem' }}>
+                          {worldCity.condition === 'sunny' ? '☀️' : 
+                           worldCity.condition === 'rainy' ? '🌧️' : 
+                           worldCity.condition === 'snowy' ? '❄️' : 
+                           worldCity.condition === 'stormy' ? '⛈️' : 
+                           worldCity.condition === 'cloudy' ? '☁️' : 
+                           worldCity.condition === 'partly-cloudy' ? '⛅' : 
+                           worldCity.condition === 'windy' ? '💨' : '🌦️'}
+                        </div>
+                        <div className="goc-info">
+                          <div className="goc-city">{worldCity.city}</div>
+                          <div className="goc-country">{worldCity.country}</div>
+                        </div>
+                      </div>
+                      <div className="goc-right">
+                        <div className="goc-temp" style={{ color: worldCity.temp > 30 ? '#f97316' : worldCity.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                          {unit === 'F' ? Math.round(worldCity.temp * 9/5 + 32) : worldCity.temp}°{unit}
+                        </div>
+                        <div className="goc-condition">{worldCity.condition}</div>
+                      </div>
+                    </div>
+
+                    {detailedCity && (
+                      <div className="goc-stats-grid">
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">💧</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{detailedCity.humidity}%</div>
+                            <div className="goc-stat-label">Humidity</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌬️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{detailedCity.windSpeed} km/h</div>
+                            <div className="goc-stat-label">Wind</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌡️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{detailedCity.pressure} hPa</div>
+                            <div className="goc-stat-label">Pressure</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">☀️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{detailedCity.uvIndex}</div>
+                            <div className="goc-stat-label">UV Index</div>
+                          </div>
+                        </div>
+                        <div className="goc-stat">
+                          <span className="goc-stat-icon">🌧️</span>
+                          <div className="goc-stat-content">
+                            <div className="goc-stat-value">{detailedCity.daily[0]?.precipitation ?? 0}%</div>
+                            <div className="goc-stat-label">Precip.</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="goc-dots">
+                      {worldMapCities.map((_, i) => (
+                        <span 
+                          key={i} 
+                          className={`goc-dot ${i === globalOverviewIdx ? 'active' : ''}`}
+                          onClick={() => {
+                            setGlobalOverviewIdx(i);
+                            setSelectedCityId(worldMapCities[i].id);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
             <div className="map-full-container">
               <WorldMap cities={worldMapCities} onSelectCity={handleMapCitySelect} selectedId={selectedCityId} unit={unit} />
             </div>
@@ -225,24 +474,118 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* ── CITIES ── */}
-        {activeSection === 'cities' && (
-          <div className="cities-section">
-            {/* Hero main card */}
-            <CityCard weather={heroCityData} onClick={() => setDetailCity(heroCity)} unit={unit} isMain />
-            <div className="cities-count">{filteredCities.length} cities · click a card to expand</div>
-            <div className="cities-grid">
-              {filteredCities.map(c => (
-                <CityCard key={c.id} weather={c} unit={unit}
-                  onClick={() => { setHeroCity(c.id); }} />
-              ))}
-              {filteredCities.length === 0 && (
-                <div className="no-results">No cities found for "{searchQuery}"</div>
-              )}
+        {/* ── INDONESIA MAP ── */}
+        {activeSection === 'indonesia' && (
+          <div className="map-full-section">
+            {/* Indonesia Overview carousel on top */}
+            <div style={{ padding: '0 20px' }}>
+              {indonesiaCities[indonesiaOverviewIdx] && (() => {
+                const idCity = indonesiaCities[indonesiaOverviewIdx];
+                return (
+                  <div className="global-overview-card">
+                    <div className="goc-content">
+                      <div className="goc-left">
+                        <div className="goc-emoji" style={{ fontSize: '2.5rem' }}>
+                          {idCity.condition === 'sunny' ? '☀️' : 
+                           idCity.condition === 'rainy' ? '🌧️' : 
+                           idCity.condition === 'snowy' ? '❄️' : 
+                           idCity.condition === 'stormy' ? '⛈️' : 
+                           idCity.condition === 'cloudy' ? '☁️' : 
+                           idCity.condition === 'partly-cloudy' ? '⛅' : 
+                           idCity.condition === 'thunderstorm' ? '🌩️' : '🌦️'}
+                        </div>
+                        <div className="goc-info">
+                          <div className="goc-city">{idCity.city}</div>
+                          <div className="goc-country">{idCity.country}</div>
+                        </div>
+                      </div>
+                      <div className="goc-right">
+                        <div className="goc-temp" style={{ color: idCity.temp > 30 ? '#f97316' : idCity.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                          {unit === 'F' ? Math.round(idCity.temp * 9/5 + 32) : idCity.temp}°{unit}
+                        </div>
+                        <div className="goc-condition">{idCity.condition}</div>
+                      </div>
+                    </div>
+
+                    <div className="goc-stats-grid">
+                      <div className="goc-stat">
+                        <span className="goc-stat-icon">💧</span>
+                        <div className="goc-stat-content">
+                          <div className="goc-stat-value">{idCity.humidity}%</div>
+                          <div className="goc-stat-label">Humidity</div>
+                        </div>
+                      </div>
+                      <div className="goc-stat">
+                        <span className="goc-stat-icon">🌬️</span>
+                        <div className="goc-stat-content">
+                          <div className="goc-stat-value">{idCity.windSpeed} km/h</div>
+                          <div className="goc-stat-label">Wind</div>
+                        </div>
+                      </div>
+                      <div className="goc-stat">
+                        <span className="goc-stat-icon">🌡️</span>
+                        <div className="goc-stat-content">
+                          <div className="goc-stat-value">{idCity.pressure} hPa</div>
+                          <div className="goc-stat-label">Pressure</div>
+                        </div>
+                      </div>
+                      <div className="goc-stat">
+                        <span className="goc-stat-icon">☀️</span>
+                        <div className="goc-stat-content">
+                          <div className="goc-stat-value">{idCity.uvIndex}</div>
+                          <div className="goc-stat-label">UV Index</div>
+                        </div>
+                      </div>
+                      <div className="goc-stat">
+                        <span className="goc-stat-icon">🌧️</span>
+                        <div className="goc-stat-content">
+                          <div className="goc-stat-value">{idCity.daily[0]?.precipitation ?? 0}%</div>
+                          <div className="goc-stat-label">Precip.</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="goc-dots">
+                      {indonesiaCities.map((_, i) => (
+                        <span 
+                          key={i} 
+                          className={`goc-dot ${i === indonesiaOverviewIdx ? 'active' : ''}`}
+                          onClick={() => {
+                            setIndonesiaOverviewIdx(i);
+                            setSelectedIndonesiaCityId(indonesiaCities[i].id);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* Indonesia section */}
-            <IndonesiaSection cities={indonesiaCities} unit={unit} />
+            <div className="map-full-container">
+              <IndonesiaMap cities={indonesiaCities} unit={unit} onSelectCity={setSelectedIndonesiaCityId} selectedId={selectedIndonesiaCityId} />
+            </div>
+            <div className="map-legend">
+              <div className="legend-title">Temperature Scale</div>
+              <div className="legend-gradient" />
+              <div className="legend-labels">
+                <span style={{ color: '#60a5fa' }}>≤0°</span>
+                <span style={{ color: '#86efac' }}>18°</span>
+                <span style={{ color: '#ef4444' }}>35°+</span>
+              </div>
+              <div className="legend-cities">
+                <div className="legend-cities-title">Indonesian Cities ({indonesiaCities.length})</div>
+                {indonesiaCities.map(c => (
+                  <div key={c.id} className={`legend-city-row ${c.id === selectedIndonesiaCityId ? 'selected' : ''}`}
+                    onClick={() => setSelectedIndonesiaCityId(c.id)}>
+                    <span>{c.city}</span>
+                    <span style={{ color: c.temp > 30 ? '#f97316' : c.temp < 5 ? '#60a5fa' : '#86efac' }}>
+                      {unit === 'F' ? Math.round(c.temp * 9/5 + 32) : c.temp}°{unit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

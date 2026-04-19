@@ -18,27 +18,26 @@
 
 ### Dashboard
 - **Live local weather card** for Tangerang with real-time clock, AQI bar, humidity, wind, pressure, UV index, and a 10-slot scrollable hourly forecast
-- **Rotating major cities panel** — auto-cycles through 8 global cities every 4 seconds with smooth fade animation and dot indicators
-- **Indonesia spotlight** — quick-access pill row for 8 Indonesian cities directly on the dashboard
+- **Global Overview carousel** — auto-rotating world cities with 5 metrics (humidity, wind, pressure, UV, precipitation), interactive navigation dots
+- **Global map display** — embedded world map showing all tracked cities with temperature-colored pins
+- **Indonesia Overview carousel** — auto-rotating Indonesian cities with same detailed metrics and interactive dots
+- **Indonesia map display** — embedded Indonesia map with temperature-colored city pins and legend
 
-### World Map
-- **Real world geography** rendered via `react-simple-maps` + Natural Earth TopoJSON (110m resolution)
-- Interactive city pins colored by temperature (blue → green → amber → red scale)
-- Animated pulse ring on selected city
-- Temperature-colored tooltips with weather emoji on hover
-- 24 global cities tracked across all continents
+### World Map Tab
+- **Overview carousel on top** — auto-rotating city selection with stats (same as dashboard Global Overview)
+- **Full-screen world map** with react-simple-maps + Natural Earth TopoJSON (110m resolution)
+- **Interactive city pins** colored by temperature (blue → green → amber → red scale)
+- **Animated pulse ring** on selected city from carousel or legend
+- **Temperature scale legend** on the right with all 24 tracked cities listed by temperature
+- Click any city in legend to instantly select it in the carousel above
 
-### 🇮🇩 Indonesia Map
-- Dedicated Indonesia map using **province-level GeoJSON** (`react-simple-maps` + Mercator projection centered on Indonesia)
-- 8 major Indonesian cities: Jakarta, Surabaya, Bandung, Bali, Medan, Makassar, Yogyakarta, Manado
-- Hover tooltips with animated pulse, weather condition, and temperature
-- City detail side panel with 3-day outlook, stats, and timezone
-
-### Global Cities
-- **Hero city card** at the top with a real Unsplash city photograph as background
-- Clicking any city card in the grid instantly swaps the hero — no page reload
-- Full 7-day forecast, wind, humidity, precipitation, UV per city
-- Live search filter across all tracked cities
+### 🇮🇩 Indonesia Tab
+- **Overview carousel on top** — auto-rotating Indonesian city selection with stats
+- **Full-screen Indonesia map** using province-level GeoJSON (`react-simple-maps` + Mercator projection)
+- **8 major Indonesian cities** with interactive pins and animated hover effects
+- **Temperature scale legend** on the right with all cities listed by temperature  
+- Click any city in legend to instantly select it in the carousel above
+- Consistent layout matching World Map tab for uniform user experience
 
 ### Weather Alerts
 - Auto-generated alerts for: extreme heat (≥38°C), freezing (≤0°C), thunderstorms, high UV, poor air quality, strong winds, high humidity
