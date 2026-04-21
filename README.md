@@ -10,7 +10,7 @@
 ---
 
 ## Live Preview
-> **[weatherify.vercel.app](https://weatherify.vercel.app)** 
+> **[weatherify.vercel.app](https://weatherify-six.vercel.app/)** 
 
 ---
 
