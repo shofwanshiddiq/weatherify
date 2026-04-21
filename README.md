@@ -9,6 +9,9 @@
 
 ---
 
+<img width="800" height="400" alt="image" src="https://github.com/user-attachments/assets/c0f986db-5bc0-412d-af9c-ec5f26500483" />
+
+
 ## Live Preview
 > **[weatherify.vercel.app](https://weatherify-six.vercel.app/)** 
 
@@ -53,7 +56,7 @@
 
 ---
 
-## 🛠 Tech Stack
+## Technologies
 
 | Layer | Technology | Purpose |
 |---|---|---|
